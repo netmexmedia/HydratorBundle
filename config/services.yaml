@@ -1,0 +1,29 @@
+services:
+  Netmex\HydratorBundle\Contracts\BuilderInterface:
+    class: Netmex\HydratorBundle\Builder\FieldBuilder
+
+  Netmex\HydratorBundle\Options\OptionsResolver: ~
+
+  Netmex\HydratorBundle\Factory\MapperFactory:
+    arguments:
+      - '@Netmex\HydratorBundle\Contracts\BuilderInterface'
+      - '@Netmex\HydratorBundle\Options\OptionsResolver'
+
+  Netmex\HydratorBundle\Mapper\MapperResolver: ~
+
+  Netmex\HydratorBundle\Validation\FieldValidator:
+    arguments:
+      - '@validator'
+
+  Netmex\HydratorBundle\Contracts\ValidatorInterface:
+    alias: Netmex\HydratorBundle\Validation\FieldValidator
+
+  Netmex\HydratorBundle\Contracts\MapperInterface:
+    class: Netmex\HydratorBundle\Mapper\Mapper
+    arguments:
+      - '@Netmex\HydratorBundle\Contracts\BuilderInterface'
+      - '@Netmex\HydratorBundle\Options\OptionsResolver'
+      - '@Netmex\HydratorBundle\Factory\MapperFactory'
+      - '@Netmex\HydratorBundle\Mapper\MapperResolver'
+      - '@Netmex\HydratorBundle\Contracts\ValidatorInterface'
+      - '@serializer'
