@@ -3,13 +3,12 @@
 namespace Netmex\HydratorBundle;
 
 use Netmex\HydratorBundle\DependencyInjection\Compiler\TagTransformersPass;
-use Netmex\HydratorBundle\DependencyInjection\Compiler\TransformerCompilerPass;
 use Netmex\HydratorBundle\DependencyInjection\Configuration;
 use Symfony\Component\Config\Definition\Processor;
-use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+use Symfony\Component\Yaml\Yaml;
 
 class HydratorBundle extends AbstractBundle
 {
@@ -21,6 +20,15 @@ class HydratorBundle extends AbstractBundle
 
     public function loadExtension(array $configs, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
+        $defaultConfigFile = __DIR__ . '/../config/netmex_hydrator.yaml';
+        $defaultConfig = [];
+
+        if (file_exists($defaultConfigFile)) {
+            $defaultConfig = Yaml::parseFile($defaultConfigFile);
+        }
+
+        $configs = array_merge([$defaultConfig['netmex_hydrator'] ?? []], $configs);
+
         $processor = new Processor();
         $configuration = new Configuration();
         $config = $processor->processConfiguration($configuration, $configs);
@@ -48,5 +56,4 @@ class HydratorBundle extends AbstractBundle
             ->autowire()
             ->autoconfigure();
     }
-
 }
