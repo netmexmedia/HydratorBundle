@@ -1,3 +1,4 @@
 netmex_hydrator:
-  transformers_path: '../src/Transformer'
+  transformers_namespace: 'App\\Transformer\\'
+  transformers_path: 'src/Transformer'
   transformer_tag: 'netmex.transformer'
