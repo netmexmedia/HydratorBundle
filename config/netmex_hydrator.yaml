@@ -1,0 +1,3 @@
+netmex_hydrator:
+  transformers_path: '../src/Transformer'
+  transformer_tag: 'netmex.transformer'
