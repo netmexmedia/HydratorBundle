@@ -6,16 +6,19 @@ use Netmex\HydratorBundle\Mapper\FieldCollection;
 use Netmex\HydratorBundle\Mapper\FieldDefinition;
 use Netmex\HydratorBundle\Mapper\MapperDefinition;
 use Netmex\HydratorBundle\Options\OptionsResolver;
+use Netmex\HydratorBundle\Registry\TransformerLocator;
 
 class MapperFactory
 {
     private BuilderInterface $builder;
     private OptionsResolver $resolver;
+    private TransformerLocator $transformerLocator;
 
-    public function __construct(BuilderInterface $builder, OptionsResolver $resolver)
+    public function __construct(BuilderInterface $builder, OptionsResolver $resolver, TransformerLocator $transformerLocator)
     {
         $this->builder = $builder;
         $this->resolver = $resolver;
+        $this->transformerLocator = $transformerLocator;
     }
 
     public function create(object $mapper, array $data): MapperDefinition
@@ -28,9 +31,10 @@ class MapperFactory
         $fields = [];
 
         foreach ($resolved['fields'] as $name => $fieldInfo) {
+            $transformer = $this->transformerLocator->get($fieldInfo['Transformer']);
             $fields[] = new FieldDefinition(
                 name: $name,
-                transformer: new $fieldInfo['Transformer'],
+                transformer: $transformer,
                 value: $data[$name] ?? null,
                 constraints: $fieldInfo['constraints'] ?? [],
             );

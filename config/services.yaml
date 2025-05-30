@@ -8,6 +8,7 @@ services:
     arguments:
       - '@Netmex\HydratorBundle\Contracts\BuilderInterface'
       - '@Netmex\HydratorBundle\Options\OptionsResolver'
+      - '@Netmex\HydratorBundle\Registry\TransformerLocator'
 
   Netmex\HydratorBundle\Mapper\MapperResolver: ~
 
@@ -27,3 +28,8 @@ services:
       - '@Netmex\HydratorBundle\Mapper\MapperResolver'
       - '@Netmex\HydratorBundle\Contracts\ValidatorInterface'
       - '@serializer'
+
+  Netmex\HydratorBundle\Registry\TransformerLocator:
+    arguments:
+      $locator: !tagged_locator
+        tag: 'netmex.transformer'
