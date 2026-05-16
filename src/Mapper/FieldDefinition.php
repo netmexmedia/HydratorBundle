@@ -7,7 +7,7 @@ class FieldDefinition
 {
     public function __construct(
         public string $name,
-        public TransformerInterface $transformer,
+        public ?TransformerInterface $transformer = null,
         public mixed $value = null,
         public array $constraints = []
     ) {}
@@ -17,7 +17,7 @@ class FieldDefinition
         return $this->name;
     }
 
-    public function getTransformer(): TransformerInterface
+    public function getTransformer(): ?TransformerInterface
     {
         return $this->transformer;
     }
@@ -39,11 +39,15 @@ class FieldDefinition
 
     public function transform(): void
     {
+        if ($this->transformer === null) {
+            return;
+        }
+
         $this->value = $this->transformer->transform($this->getValue());
     }
 
     public function isRequired(): bool
     {
-        return $this->constraints['required'];
+        return $this->constraints['required'] ?? false;
     }
 }
