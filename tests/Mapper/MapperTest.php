@@ -2,154 +2,108 @@
 
 namespace Netmex\HydratorBundle\Tests\Mapper;
 
-use Netmex\HydratorBundle\Mapper\FieldCollection;
-use Netmex\HydratorBundle\Mapper\FieldDefinition;
-use Netmex\HydratorBundle\Mapper\MapperDefinition;
-use PHPUnit\Framework\TestCase;
-use Netmex\HydratorBundle\Mapper\Mapper;
-use Netmex\HydratorBundle\Contracts\BuilderInterface;
-use Netmex\HydratorBundle\Options\OptionsResolver;
 use Netmex\HydratorBundle\Factory\MapperFactory;
-use Netmex\HydratorBundle\Mapper\MapperResolver;
-use Netmex\HydratorBundle\Contracts\ValidatorInterface;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Netmex\HydratorBundle\Mapper\Mapper;
 use Netmex\HydratorBundle\Exception\MappingValidationException;
+use Netmex\HydratorBundle\Contracts\BuilderInterface;
+use Netmex\HydratorBundle\Contracts\ValidatorInterface;
+use Netmex\HydratorBundle\Options\OptionsResolver;
+use Netmex\HydratorBundle\Mapper\MapperDefinition;
+use Netmex\HydratorBundle\Mapper\FieldDefinition;
+use Netmex\HydratorBundle\Mapper\MapperResolver;
+use Netmex\HydratorBundle\Mapper\FieldCollection;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Netmex\HydratorBundle\Contracts\TransformerInterface;
 
 class MapperTest extends TestCase
 {
-    private const FIELD_NAME = 'fieldName';
-
-    private BuilderInterface $builder;
-    private OptionsResolver $resolver;
-    private MapperFactory $factory;
-    private MapperResolver $mapperResolver;
-    private ValidatorInterface $validator;
-    private DenormalizerInterface $serializer;
-    private Mapper $mapper;
-
-    protected function setUp(): void
+    public function testBuildTransformsAndDenormalizesSuccessfully(): void
     {
-        $this->builder = $this->createMock(BuilderInterface::class);
-        $this->resolver = $this->createMock(OptionsResolver::class);
-        $this->factory = $this->createMock(MapperFactory::class);
-        $this->mapperResolver = $this->createMock(MapperResolver::class);
-        $this->validator = $this->createMock(ValidatorInterface::class);
-        $this->serializer = $this->createMock(DenormalizerInterface::class);
+        $builder = $this->createMock(BuilderInterface::class);
+        $optionsResolver = $this->createMock(OptionsResolver::class);
+        $mapperFactory = $this->createMock(MapperFactory::class);
+        $mapperResolver = $this->createMock(MapperResolver::class);
+        $validator = $this->createMock(ValidatorInterface::class);
+        $serializer = $this->createMock(DenormalizerInterface::class);
 
-        $this->mapper = new Mapper(
-            $this->builder,
-            $this->resolver,
-            $this->factory,
-            $this->mapperResolver,
-            $this->validator,
-            $this->serializer
-        );
+        $target = new \stdClass();
+        $modelClass = \stdClass::class;
+        $expectedOutput = new \stdClass();
+
+        // Create transformers that will return transformed values
+        $transformer1 = $this->createMock(TransformerInterface::class);
+        $transformer1->method('transform')->willReturn('trans1');
+
+        $transformer2 = $this->createMock(TransformerInterface::class);
+        $transformer2->method('transform')->willReturn('trans2');
+
+        // Create FieldDefinition instances with initial raw values
+        $field1 = new FieldDefinition('field1', $transformer1, 'raw1', []);
+        $field2 = new FieldDefinition('field2', $transformer2, 'raw2', []);
+
+        $mapperDefinition = new MapperDefinition($modelClass, new FieldCollection([$field1, $field2]), $target);
+
+        // mapperResolver returns some mapper object (not used directly by Mapper except passed to factory)
+        $mapperInstance = new \stdClass();
+        $mapperResolver->method('resolve')->with($this->isType('string'), $builder, $optionsResolver)->willReturn($mapperInstance);
+
+        // Factory should receive the mapper instance and input data and return our prepared definition
+        $mapperFactory->method('create')->with($mapperInstance, ['field1' => 'raw1', 'field2' => 'raw2'], $target)->willReturn($mapperDefinition);
+
+        // Validator expectations
+        $validator->expects($this->once())->method('resetErrors');
+        // validate called 4 times: input+output for each field
+        $validator->expects($this->exactly(4))->method('validate');
+        $validator->method('hasErrors')->willReturn(false);
+
+        // Serializer should be called with transformed data
+        $serializer->expects($this->once())
+            ->method('denormalize')
+            ->with(
+                ['field1' => 'trans1', 'field2' => 'trans2'],
+                $modelClass,
+                null,
+                [AbstractNormalizer::OBJECT_TO_POPULATE => $target]
+            )
+            ->willReturn($expectedOutput);
+
+        $mapper = new Mapper($builder, $optionsResolver, $mapperFactory, $mapperResolver, $validator, $serializer);
+
+        $result = $mapper->build('Some\\MapperClass', ['field1' => 'raw1', 'field2' => 'raw2'], $target);
+
+        $this->assertSame($expectedOutput, $result);
     }
 
-    private function createFieldDefinitionMock(): FieldDefinition
+    public function testBuildThrowsMappingValidationExceptionWhenValidatorHasErrors(): void
     {
-        $fieldMock = $this->createMock(FieldDefinition::class);
-        $fieldMock->method('getValue')->willReturn('some value');
-        $fieldMock->method('getName')->willReturn(self::FIELD_NAME);
+        $builder = $this->createMock(BuilderInterface::class);
+        $optionsResolver = $this->createMock(OptionsResolver::class);
+        $mapperFactory = $this->createMock(MapperFactory::class);
+        $mapperResolver = $this->createMock(MapperResolver::class);
+        $validator = $this->createMock(ValidatorInterface::class);
+        $serializer = $this->createMock(DenormalizerInterface::class);
 
-        $fieldMock->name = self::FIELD_NAME; // Add this line to fix typed property error
+        $transformer = $this->createMock(TransformerInterface::class);
+        $transformer->method('transform')->willReturn('trans');
 
-        $fieldMock->expects($this->once())->method('transform');
+        $field = new FieldDefinition('name', $transformer, 'value', []);
 
-        return $fieldMock;
-    }
+        $mapperDefinition = new MapperDefinition(\stdClass::class, new FieldCollection([$field]), null);
 
-    private function createFieldCollectionWith(FieldDefinition $fieldDefinition): FieldCollection
-    {
-        return new FieldCollection([$fieldDefinition]);
-    }
+        $mapperResolver->method('resolve')->willReturn(new \stdClass());
+        $mapperFactory->method('create')->willReturn($mapperDefinition);
 
-    private function createMapperDefinitionMockWithFields(FieldCollection $fieldCollection): MapperDefinition
-    {
-        $mapperDefinitionMock = $this->createMock(MapperDefinition::class);
-        $mapperDefinitionMock->method('getFields')->willReturn($fieldCollection);
-        $mapperDefinitionMock->method('getModel')->willReturn(\stdClass::class);
+        $validator->expects($this->once())->method('resetErrors');
+        $validator->expects($this->exactly(2))->method('validate'); // input + output
+        $validator->method('hasErrors')->willReturn(true);
+        $validator->method('getErrors')->willReturn(['some_error']);
 
-        return $mapperDefinitionMock;
-    }
-
-    public function testBuildCallsMapperResolver(): void
-    {
-        $mapperInstance = $this->createMock(DummyMapperClass::class);
-        $this->mapperResolver->expects($this->once())
-            ->method('resolve')
-            ->with(DummyMapperClass::class)
-            ->willReturn($mapperInstance);
-
-        $this->factory->method('create')->willReturn($this->createMock(MapperDefinition::class));
-        $this->validator->method('hasErrors')->willReturn(false);
-        $this->serializer->method('denormalize')->willReturn(new \stdClass());
-
-        $this->mapper->build(DummyMapperClass::class, []);
-    }
-
-    public function testBuildValidatesFields(): void
-    {
-        $fieldMock = $this->createFieldDefinitionMock();
-        $fieldCollection = $this->createFieldCollectionWith($fieldMock);
-        $mapperDefinitionMock = $this->createMapperDefinitionMockWithFields($fieldCollection);
-
-        $this->factory->method('create')->willReturn($mapperDefinitionMock);
-        $this->mapperResolver->method('resolve')->willReturn($this->createMock(DummyMapperClass::class));
-
-        $this->validator->expects($this->exactly(2))
-            ->method('validate')
-            ->with($fieldMock, $this->isType('string'));
-
-        $this->validator->method('hasErrors')->willReturn(false);
-        $this->serializer->method('denormalize')->willReturn(new \stdClass());
-
-        $this->mapper->build(DummyMapperClass::class, [self::FIELD_NAME => 'value']);
-    }
-
-    public function testBuildReturnsHydratedObject(): void
-    {
-        $fieldDefinitionMock = $this->createFieldDefinitionMock();
-
-        $fieldCollectionMock = $this->createMock(FieldCollection::class);
-        $fieldCollectionMock->method('count')->willReturn(1);
-        $fieldCollectionMock->method('get')->willReturn($fieldDefinitionMock);
-        $fieldCollectionMock->method('getIterator')->willReturn(new \ArrayIterator([$fieldDefinitionMock]));
-
-        $mapperDefinitionMock = $this->createMapperDefinitionMockWithFields($fieldCollectionMock);
-
-        $this->factory->method('create')->willReturn($mapperDefinitionMock);
-        $this->mapperResolver->method('resolve')->willReturn($this->createMock(DummyMapperClass::class));
-        $this->validator->method('hasErrors')->willReturn(false);
-
-        $expectedObject = new \stdClass();
-        $this->serializer->method('denormalize')->willReturn($expectedObject);
-
-        $result = $this->mapper->build(DummyMapperClass::class, []);
-        $this->assertSame($expectedObject, $result);
-    }
-
-    public function testBuildThrowsExceptionOnValidationError(): void
-    {
-        $fieldDefinitionMock = $this->createFieldDefinitionMock();
-
-        $fieldCollectionMock = $this->createMock(FieldCollection::class);
-        $fieldCollectionMock->method('count')->willReturn(1);
-        $fieldCollectionMock->method('get')->willReturn($fieldDefinitionMock);
-        $fieldCollectionMock->method('getIterator')->willReturn(new \ArrayIterator([$fieldDefinitionMock]));
-
-        $mapperDefinitionMock = $this->createMapperDefinitionMockWithFields($fieldCollectionMock);
-
-        $this->factory->method('create')->willReturn($mapperDefinitionMock);
-        $this->mapperResolver->method('resolve')->willReturn($this->createMock(DummyMapperClass::class));
-
-        $this->validator->method('hasErrors')->willReturn(true);
-        $this->validator->method('getErrors')->willReturn([
-            self::FIELD_NAME => ['error'],
-        ]);
+        $mapper = new Mapper($builder, $optionsResolver, $mapperFactory, $mapperResolver, $validator, $serializer);
 
         $this->expectException(MappingValidationException::class);
 
-        $this->mapper->build(DummyMapperClass::class, []);
+        $mapper->build('Some\\MapperClass', ['name' => 'value']);
     }
 }

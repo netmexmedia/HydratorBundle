@@ -8,9 +8,12 @@ class MapperDefinition
 
     private FieldCollection $fields;
 
-    public function __construct(string $model, FieldCollection $fields) {
+    private ?object $target;
+
+    public function __construct(string $model, FieldCollection $fields, ?object $target = null) {
         $this->model = $model;
         $this->fields = $fields;
+        $this->target = $target;
     }
 
     public function getModel(): string
@@ -21,5 +24,10 @@ class MapperDefinition
     public function getFields(): FieldCollection
     {
         return $this->fields;
+    }
+
+    public function getTarget(): ?object
+    {
+        return $this->target;
     }
 }
