@@ -9,6 +9,7 @@ use Netmex\HydratorBundle\Exception\MappingValidationException;
 use Netmex\HydratorBundle\Factory\MapperFactory;
 use Netmex\HydratorBundle\Options\OptionsResolver;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use \Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 class Mapper implements MapperInterface
 {
@@ -37,13 +38,13 @@ class Mapper implements MapperInterface
         $this->serializer = $serializer;
     }
 
-    public function build(string $mapperClass, array $inputData): object
+    public function build(string $mapperClass, array $inputData, ?object $target = null): object
     {
         $this->validator->resetErrors();
         $transformedData = [];
 
         $transformer = $this->mapperResolver->resolve($mapperClass, $this->builder, $this->optionsResolver);
-        $definition = $this->hydrationDefinitionFactory->create($transformer, $inputData);
+        $definition = $this->hydrationDefinitionFactory->create($transformer, $inputData, $target);
         $fields = $definition->getFields();
 
         foreach ($fields as $field) {
@@ -64,7 +65,13 @@ class Mapper implements MapperInterface
             throw new MappingValidationException($this->validator->getErrors());
         }
 
-        return $this->serializer->denormalize($transformedData, $definition->getModel());
+        return $this->serializer->denormalize(
+            $transformedData,
+            $definition->getModel(),
+            null,
+            [
+                AbstractNormalizer::OBJECT_TO_POPULATE => $definition->getTarget()
+            ]
+        );
     }
-
 }

@@ -1,1 +1,4 @@
 /vendor/
+
+# Ignore accidental nested vendor directory inside src/
+src/vendor/
