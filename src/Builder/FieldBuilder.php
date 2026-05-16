@@ -7,9 +7,9 @@ use Netmex\HydratorBundle\Contracts\TransformerInterface;
 
 class FieldBuilder implements BuilderInterface
 {
-    private array $fields;
+    private array $fields = [];
 
-    public function add(string $field, TransformerInterface|string $type, ?array $constraints): static
+    public function add(string $field, TransformerInterface|string|null $type = null, ?array $constraints = []): static
     {
         $this->fields[$field] = [
             'Transformer' => $type,

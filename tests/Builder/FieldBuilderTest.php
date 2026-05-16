@@ -1,6 +1,6 @@
 <?php
 
-namespace Netmex\HydratorBundle\Test\Builder;
+namespace Netmex\HydratorBundle\Tests\Builder;
 
 use Netmex\HydratorBundle\Builder\FieldBuilder;
 use Netmex\HydratorBundle\Contracts\TransformerInterface;
@@ -34,15 +34,29 @@ class FieldBuilderTest extends TestCase
 
     public function testAddAcceptsStringTransformer(): void
     {
-        $this->builder->add('status', 'string_transformer', null);
+        // When passing a string transformer and omitting constraints, constraints should default to an empty array
+        $this->builder->add('status', 'string_transformer');
 
         $expected = [
             'status' => [
                 'Transformer' => 'string_transformer',
-                'constraints' => null,
+                'constraints' => [],
             ],
         ];
 
         $this->assertEquals($expected, $this->builder->getFields());
+    }
+
+    public function testAddWithoutTransformerDefaultsConstraintsEmpty(): void
+    {
+        // Transformer is optional and constraints default to empty array
+        $this->builder->add('name');
+
+        $fields = $this->builder->getFields();
+
+        $this->assertArrayHasKey('name', $fields);
+        $this->assertArrayHasKey('Transformer', $fields['name']);
+        $this->assertNull($fields['name']['Transformer']);
+        $this->assertSame([], $fields['name']['constraints']);
     }
 }

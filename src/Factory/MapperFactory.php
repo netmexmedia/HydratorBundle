@@ -30,7 +30,7 @@ class MapperFactory
         foreach ($resolved['fields'] as $name => $fieldInfo) {
             $fields[] = new FieldDefinition(
                 name: $name,
-                transformer: new $fieldInfo['Transformer'],
+                transformer: isset($fieldInfo['Transformer']) ? new $fieldInfo['Transformer'] : null,
                 value: $data[$name] ?? null,
                 constraints: $fieldInfo['constraints'] ?? [],
             );
