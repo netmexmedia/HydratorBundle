@@ -3,7 +3,9 @@
 namespace Netmex\HydratorBundle\Mapper;
 
 use Netmex\HydratorBundle\Contracts\BuilderInterface;
+use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
 use Netmex\HydratorBundle\Contracts\MapperInterface;
+use Netmex\HydratorBundle\Contracts\TransformerInterface;
 use Netmex\HydratorBundle\Contracts\ValidatorInterface;
 use Netmex\HydratorBundle\Exception\MappingValidationException;
 use Netmex\HydratorBundle\Factory\MapperFactory;
@@ -41,25 +43,10 @@ class Mapper implements MapperInterface
     public function build(string $mapperClass, array $inputData, ?object $target = null): object
     {
         $this->validator->resetErrors();
-        $transformedData = [];
 
-        $transformer = $this->mapperResolver->resolve($mapperClass, $this->builder, $this->optionsResolver);
-        $definition = $this->hydrationDefinitionFactory->create($transformer, $inputData, $target);
-        $fields = $definition->getFields();
-
-        foreach ($fields as $field) {
-            $this->validator->validate($field, 'input');
-
-            if ($field->getValue() === null) {
-                continue;
-            }
-
-            $field->transform();
-
-            $this->validator->validate($field, 'output');
-
-            $transformedData[$field->getName()] = $field->getValue();
-        }
+        $mapperDefinition = $this->mapperResolver->resolve($mapperClass, $this->builder, $this->optionsResolver);
+        $definition = $this->hydrationDefinitionFactory->create($mapperDefinition, $inputData, $target);
+        $transformedData = $this->processFields($definition);
 
         if ($this->validator->hasErrors()) {
             throw new MappingValidationException($this->validator->getErrors());
@@ -73,5 +60,50 @@ class Mapper implements MapperInterface
                 AbstractNormalizer::OBJECT_TO_POPULATE => $definition->getTarget()
             ]
         );
+    }
+
+    private function processFields(MapperDefinition $definition): array
+    {
+        $transformedData = [];
+
+        /** @var FieldDefinition $field */
+        foreach ($definition->getFields() as $field) {
+            $this->validator->validate($field, 'input');
+
+            if ($field->getValue() === null) {
+                continue;
+            }
+
+            $type = $field->getType();
+
+            if ($type instanceof TransformerInterface) {
+                $field->transform();
+            } elseif ($type instanceof MapperDefinitionInterface) {
+                $nestedDefinition = $this->hydrationDefinitionFactory->create(
+                    $type,
+                    $field->getValue()
+                );
+
+                $nestedData = $this->processFields($nestedDefinition);
+
+                $nestedObject = $this->serializer->denormalize(
+                    $nestedData,
+                    $nestedDefinition->getModel(),
+                    null,
+                    [
+                        AbstractNormalizer::OBJECT_TO_POPULATE =>
+                            $nestedDefinition->getTarget(),
+                    ]
+                );
+
+                $field->setValue($nestedObject);
+            }
+
+            $this->validator->validate($field, 'output');
+
+            $transformedData[$field->getName()] = $field->getValue();
+        }
+
+        return $transformedData;
     }
 }

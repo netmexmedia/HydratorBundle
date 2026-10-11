@@ -1,5 +1,7 @@
 <?php
 
+namespace Netmex\HydratorBundle\Tests\Transformer;
+
 use Netmex\HydratorBundle\Transformer\CapitalizationTransformer;
 use PHPUnit\Framework\TestCase;
 

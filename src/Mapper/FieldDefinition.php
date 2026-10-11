@@ -1,13 +1,14 @@
 <?php
 
 namespace Netmex\HydratorBundle\Mapper;
+use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
 use Netmex\HydratorBundle\Contracts\TransformerInterface;
 
 class FieldDefinition
 {
     public function __construct(
         public string $name,
-        public ?TransformerInterface $transformer = null,
+        public TransformerInterface|MapperDefinitionInterface|null $type = null,
         public mixed $value = null,
         public array $constraints = []
     ) {}
@@ -17,14 +18,19 @@ class FieldDefinition
         return $this->name;
     }
 
-    public function getTransformer(): ?TransformerInterface
+    public function getType(): TransformerInterface|MapperDefinitionInterface|null
     {
-        return $this->transformer;
+        return $this->type;
     }
 
     public function getValue(): mixed
     {
         return $this->value;
+    }
+
+    public function setValue(mixed $value): void
+    {
+        $this->value = $value;
     }
 
     public function getConstraints(): array
@@ -39,11 +45,11 @@ class FieldDefinition
 
     public function transform(): void
     {
-        if ($this->transformer === null) {
+        if (!$this->type instanceof TransformerInterface) {
             return;
         }
 
-        $this->value = $this->transformer->transform($this->getValue());
+        $this->value = $this->type->transform($this->value);
     }
 
     public function isRequired(): bool

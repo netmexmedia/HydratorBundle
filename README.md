@@ -54,6 +54,19 @@ class Hydrator implements MapperDefinitionInterface
 }
 ```
 
+### Nested Hydration
+
+You can also use a mapper definition to hydrate nested objects. Simply pass another mapper definition to `add()`.
+
+```php
+$builder
+    ->add('name')
+    ->add('address', new AddressHydrator());
+```
+
+The `AddressHydrator` defines how the `address` field is mapped into an object. Nested mappings support the same transformations and validation as regular mappings.
+
+
 ### Create a Transformer
 
 ```php

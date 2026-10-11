@@ -2,6 +2,7 @@
 
 namespace Netmex\HydratorBundle\Tests\Mapper;
 
+use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
 use Netmex\HydratorBundle\Factory\MapperFactory;
 use Netmex\HydratorBundle\Mapper\Mapper;
 use Netmex\HydratorBundle\Exception\MappingValidationException;
@@ -19,15 +20,29 @@ use Netmex\HydratorBundle\Contracts\TransformerInterface;
 
 class MapperTest extends TestCase
 {
+    private BuilderInterface $builder;
+    private OptionsResolver $optionsResolver;
+    private MapperFactory $mapperFactory;
+    private MapperResolver $mapperResolver;
+    private ValidatorInterface $validator;
+    private DenormalizerInterface $serializer;
+    private MapperDefinitionInterface $mapperDefinition;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->builder = $this->createMock(BuilderInterface::class);
+        $this->optionsResolver = $this->createMock(OptionsResolver::class);
+        $this->mapperFactory = $this->createMock(MapperFactory::class);
+        $this->mapperResolver = $this->createMock(MapperResolver::class);
+        $this->validator = $this->createMock(ValidatorInterface::class);
+        $this->serializer = $this->createMock(DenormalizerInterface::class);
+        $this->mapperDefinition = $this->createMock(MapperDefinitionInterface::class);
+    }
+
     public function testBuildTransformsAndDenormalizesSuccessfully(): void
     {
-        $builder = $this->createMock(BuilderInterface::class);
-        $optionsResolver = $this->createMock(OptionsResolver::class);
-        $mapperFactory = $this->createMock(MapperFactory::class);
-        $mapperResolver = $this->createMock(MapperResolver::class);
-        $validator = $this->createMock(ValidatorInterface::class);
-        $serializer = $this->createMock(DenormalizerInterface::class);
-
         $target = new \stdClass();
         $modelClass = \stdClass::class;
         $expectedOutput = new \stdClass();
@@ -46,20 +61,19 @@ class MapperTest extends TestCase
         $mapperDefinition = new MapperDefinition($modelClass, new FieldCollection([$field1, $field2]), $target);
 
         // mapperResolver returns some mapper object (not used directly by Mapper except passed to factory)
-        $mapperInstance = new \stdClass();
-        $mapperResolver->method('resolve')->with($this->isType('string'), $builder, $optionsResolver)->willReturn($mapperInstance);
+        $this->mapperResolver->method('resolve')->with($this->isType('string'), $this->builder, $this->optionsResolver)->willReturn($this->mapperDefinition);
 
         // Factory should receive the mapper instance and input data and return our prepared definition
-        $mapperFactory->method('create')->with($mapperInstance, ['field1' => 'raw1', 'field2' => 'raw2'], $target)->willReturn($mapperDefinition);
+        $this->mapperFactory->method('create')->with($this->mapperDefinition, ['field1' => 'raw1', 'field2' => 'raw2'], $target)->willReturn($mapperDefinition);
 
         // Validator expectations
-        $validator->expects($this->once())->method('resetErrors');
+        $this->validator->expects($this->once())->method('resetErrors');
         // validate called 4 times: input+output for each field
-        $validator->expects($this->exactly(4))->method('validate');
-        $validator->method('hasErrors')->willReturn(false);
+        $this->validator->expects($this->exactly(4))->method('validate');
+        $this->validator->method('hasErrors')->willReturn(false);
 
         // Serializer should be called with transformed data
-        $serializer->expects($this->once())
+        $this->serializer->expects($this->once())
             ->method('denormalize')
             ->with(
                 ['field1' => 'trans1', 'field2' => 'trans2'],
@@ -69,7 +83,7 @@ class MapperTest extends TestCase
             )
             ->willReturn($expectedOutput);
 
-        $mapper = new Mapper($builder, $optionsResolver, $mapperFactory, $mapperResolver, $validator, $serializer);
+        $mapper = new Mapper($this->builder, $this->optionsResolver, $this->mapperFactory, $this->mapperResolver, $this->validator, $this->serializer);
 
         $result = $mapper->build('Some\\MapperClass', ['field1' => 'raw1', 'field2' => 'raw2'], $target);
 
@@ -78,13 +92,6 @@ class MapperTest extends TestCase
 
     public function testBuildThrowsMappingValidationExceptionWhenValidatorHasErrors(): void
     {
-        $builder = $this->createMock(BuilderInterface::class);
-        $optionsResolver = $this->createMock(OptionsResolver::class);
-        $mapperFactory = $this->createMock(MapperFactory::class);
-        $mapperResolver = $this->createMock(MapperResolver::class);
-        $validator = $this->createMock(ValidatorInterface::class);
-        $serializer = $this->createMock(DenormalizerInterface::class);
-
         $transformer = $this->createMock(TransformerInterface::class);
         $transformer->method('transform')->willReturn('trans');
 
@@ -92,18 +99,104 @@ class MapperTest extends TestCase
 
         $mapperDefinition = new MapperDefinition(\stdClass::class, new FieldCollection([$field]), null);
 
-        $mapperResolver->method('resolve')->willReturn(new \stdClass());
-        $mapperFactory->method('create')->willReturn($mapperDefinition);
+        $this->mapperResolver->method('resolve')->willReturn($this->mapperDefinition);
+        $this->mapperFactory->method('create')->willReturn($mapperDefinition);
 
-        $validator->expects($this->once())->method('resetErrors');
-        $validator->expects($this->exactly(2))->method('validate'); // input + output
-        $validator->method('hasErrors')->willReturn(true);
-        $validator->method('getErrors')->willReturn(['some_error']);
+        $this->validator->expects($this->once())->method('resetErrors');
+        $this->validator->expects($this->exactly(2))->method('validate'); // input + output
+        $this->validator->method('hasErrors')->willReturn(true);
+        $this->validator->method('getErrors')->willReturn([
+            [
+                'context' => 'input',
+                'property' => 'name',
+                'message' => 'This field is invalid.',
+            ],
+        ]);
 
-        $mapper = new Mapper($builder, $optionsResolver, $mapperFactory, $mapperResolver, $validator, $serializer);
+        $mapper = new Mapper($this->builder, $this->optionsResolver, $this->mapperFactory, $this->mapperResolver, $this->validator, $this->serializer);
 
         $this->expectException(MappingValidationException::class);
 
         $mapper->build('Some\\MapperClass', ['name' => 'value']);
+    }
+
+    public function testBuildMapsNestedMapperDefinition(): void
+    {
+        $target = new \stdClass();
+        $nestedTarget = new \stdClass();
+
+        $parentModel = \stdClass::class;
+        $nestedModel = \stdClass::class;
+
+        $nestedObject = new \stdClass();
+        $nestedObject->city = 'Amsterdam';
+
+        // The nested mapper's field.
+        $nestedField = new FieldDefinition(
+            'city',
+            null,
+            'Amsterdam',
+            []
+        );
+
+        $nestedRuntimeDefinition = new MapperDefinition(
+            $nestedModel,
+            new FieldCollection([$nestedField]),
+            $nestedTarget
+        );
+
+        // The parent field uses a nested mapper definition.
+        $nestedMapperDefinition = $this->createMock(
+            MapperDefinitionInterface::class
+        );
+
+        $parentField = new FieldDefinition(
+            'address',
+            $nestedMapperDefinition,
+            ['city' => 'Amsterdam'],
+            []
+        );
+
+        $parentRuntimeDefinition = new MapperDefinition(
+            $parentModel,
+            new FieldCollection([$parentField]),
+            $target
+        );
+
+        $this->mapperResolver->expects($this->once())->method('resolve')->willReturn($this->mapperDefinition);
+
+        $this->mapperFactory->expects($this->exactly(2))->method('create')
+            ->willReturnOnConsecutiveCalls(
+                $parentRuntimeDefinition,
+                $nestedRuntimeDefinition
+            );
+
+        $this->validator->expects($this->once())->method('resetErrors');
+
+        $this->validator->expects($this->exactly(4))->method('validate');
+
+        $this->validator->method('hasErrors')->willReturn(false);
+
+        // The first denormalization creates the nested object;
+        // the second creates the parent object.
+        $this->serializer->expects($this->exactly(2))->method('denormalize')
+            ->willReturnOnConsecutiveCalls(
+                $nestedObject,
+                $target
+            );
+
+        $mapper = new Mapper($this->builder, $this->optionsResolver, $this->mapperFactory, $this->mapperResolver, $this->validator, $this->serializer);
+
+        $result = $mapper->build(
+            'Some\\MapperClass',
+            [
+                'address' => [
+                    'city' => 'Amsterdam',
+                ],
+            ],
+            $target
+        );
+
+        $this->assertSame($target, $result);
     }
 }

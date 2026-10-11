@@ -3,6 +3,7 @@
 namespace Netmex\HydratorBundle\Tests\Builder;
 
 use Netmex\HydratorBundle\Builder\FieldBuilder;
+use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
 use Netmex\HydratorBundle\Contracts\TransformerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -15,7 +16,7 @@ class FieldBuilderTest extends TestCase
         $this->builder = new FieldBuilder();
     }
 
-    public function testAddFieldStoresCorrectData(): void
+    public function testAddFieldWithTransformer(): void
     {
         $mockTransformer = $this->createMock(TransformerInterface::class);
         $constraints = ['not_blank', 'max_length' => 255];
@@ -25,6 +26,23 @@ class FieldBuilderTest extends TestCase
         $expected = [
             'title' => [
                 'Transformer' => $mockTransformer,
+                'constraints' => $constraints,
+            ],
+        ];
+
+        $this->assertEquals($expected, $this->builder->getFields());
+    }
+
+    public function testAddFieldWithMapperDefinition(): void
+    {
+        $mockMapperDefinition = $this->createMock(MapperDefinitionInterface::class);
+        $constraints = ['not_blank', 'max_length' => 255];
+
+        $this->builder->add('title', $mockMapperDefinition, $constraints);
+
+        $expected = [
+            'title' => [
+                'MapperDefinition' => $mockMapperDefinition,
                 'constraints' => $constraints,
             ],
         ];
@@ -47,6 +65,7 @@ class FieldBuilderTest extends TestCase
         $this->assertEquals($expected, $this->builder->getFields());
     }
 
+    // TODO this isn't quite right without transformer then the whole transformer key should not exist
     public function testAddWithoutTransformerDefaultsConstraintsEmpty(): void
     {
         // Transformer is optional and constraints default to empty array
