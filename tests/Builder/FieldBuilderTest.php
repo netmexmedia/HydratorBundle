@@ -65,7 +65,6 @@ class FieldBuilderTest extends TestCase
         $this->assertEquals($expected, $this->builder->getFields());
     }
 
-    // TODO this isn't quite right without transformer then the whole transformer key should not exist
     public function testAddWithoutTransformerDefaultsConstraintsEmpty(): void
     {
         // Transformer is optional and constraints default to empty array
