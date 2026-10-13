@@ -21,18 +21,13 @@ Create a mapper class that implements
 ```Netmex\HydratorBundle\Contracts\MapperDefinitionInterface```.
 
 ##### Example Hydrator
+
 ```php
 <?php
 
 namespace App\Hydrator;
 
-use App\Entity\MyClass;
-use Netmex\HydratorBundle\Contracts\BuilderInterface;
-use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
-use Netmex\HydratorBundle\Options\OptionsResolver;
-use Symfony\Component\Validator\Constraints\NotBlank;
-use Symfony\Component\Validator\Constraints\Length;
-use App\Transformer\CapitalizationTransformer;
+use App\Entity\MyClass;use App\Transformer\CapitalizationTransformer;use Netmex\HydratorBundle\Contracts\BuilderInterface;use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;use Netmex\HydratorBundle\Resolver\OptionsResolver;use Symfony\Component\Validator\Constraints\Length;use Symfony\Component\Validator\Constraints\NotBlank;
 
 class Hydrator implements MapperDefinitionInterface
 {

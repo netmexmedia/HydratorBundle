@@ -2,7 +2,7 @@
 
 namespace Netmex\HydratorBundle\Tests\Options;
 
-use Netmex\HydratorBundle\Options\OptionsResolver;
+use Netmex\HydratorBundle\Resolver\OptionsResolver;
 use PHPUnit\Framework\TestCase;
 
 class OptionsResolverTest extends TestCase
@@ -10,8 +10,7 @@ class OptionsResolverTest extends TestCase
     public function testSetAndGetDefaults()
     {
         $resolver = new OptionsResolver();
-        $resolver->setDefault('model', 'User');
-        $resolver->setDefault('fields', ['name' => ['type' => 'string']]);
+        $resolver->setValue('fields', ['name' => ['type' => 'string']]);
 
         $resolved = $resolver->resolve();
 
@@ -39,14 +38,5 @@ class OptionsResolverTest extends TestCase
         $this->assertCount(2, $resolved['fields']);
         $this->assertEquals(['type' => 'string'], $resolved['fields']['name']);
         $this->assertEquals(['type' => 'email'], $resolved['fields']['email']);
-    }
-
-    public function testHasModel()
-    {
-        $resolver = new OptionsResolver();
-        $this->assertFalse($resolver->hasModel());
-
-        $resolver->setDefault('model', 'User');
-        $this->assertTrue($resolver->hasModel());
     }
 }

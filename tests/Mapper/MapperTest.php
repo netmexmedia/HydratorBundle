@@ -2,21 +2,21 @@
 
 namespace Netmex\HydratorBundle\Tests\Mapper;
 
-use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
-use Netmex\HydratorBundle\Factory\MapperFactory;
-use Netmex\HydratorBundle\Mapper\Mapper;
-use Netmex\HydratorBundle\Exception\MappingValidationException;
 use Netmex\HydratorBundle\Contracts\BuilderInterface;
-use Netmex\HydratorBundle\Contracts\ValidatorInterface;
-use Netmex\HydratorBundle\Options\OptionsResolver;
-use Netmex\HydratorBundle\Mapper\MapperDefinition;
-use Netmex\HydratorBundle\Mapper\FieldDefinition;
-use Netmex\HydratorBundle\Mapper\MapperResolver;
-use Netmex\HydratorBundle\Mapper\FieldCollection;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
 use Netmex\HydratorBundle\Contracts\TransformerInterface;
+use Netmex\HydratorBundle\Contracts\ValidatorInterface;
+use Netmex\HydratorBundle\Exception\MappingValidationException;
+use Netmex\HydratorBundle\Factory\MapperFactory;
+use Netmex\HydratorBundle\Mapper\FieldCollection;
+use Netmex\HydratorBundle\Mapper\FieldDefinition;
+use Netmex\HydratorBundle\Mapper\Mapper;
+use Netmex\HydratorBundle\Mapper\MapperDefinition;
+use Netmex\HydratorBundle\Mapper\MapperResolver;
+use Netmex\HydratorBundle\Resolver\OptionsResolver;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 class MapperTest extends TestCase
 {

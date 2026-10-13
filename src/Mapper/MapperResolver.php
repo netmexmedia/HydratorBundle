@@ -4,11 +4,11 @@ namespace Netmex\HydratorBundle\Mapper;
 
 use Netmex\HydratorBundle\Contracts\BuilderInterface;
 use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
-use Netmex\HydratorBundle\Options\OptionsResolver;
+use Netmex\HydratorBundle\Contracts\OptionsResolverInterface;
 
 class MapperResolver
 {
-    public function resolve(string $mapper, BuilderInterface $builder, OptionsResolver $optionsResolver): MapperDefinitionInterface
+    public function resolve(string $mapper, BuilderInterface $builder, OptionsResolverInterface $optionsResolver): MapperDefinitionInterface
     {
         if (!class_exists($mapper)) {
             throw new \InvalidArgumentException("Mapper class '{$mapper}' does not exist.");

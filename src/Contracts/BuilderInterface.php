@@ -2,8 +2,18 @@
 
 namespace Netmex\HydratorBundle\Contracts;
 
-interface BuilderInterface {
-    public function add(string $field, TransformerInterface|MapperDefinitionInterface|string|null $type = null, ?array $constraints = []): static;
+interface BuilderInterface
+{
+    /**
+     * @param string $field
+     * @param TransformerInterface|MapperDefinitionInterface|string|null $type
+     * @param array|null $constraints
+     * @param array{
+     *     multiple?: bool,
+     *     source?: string|null
+     * } $options
+     */
+    public function add(string $field, TransformerInterface|string|MapperDefinitionInterface $type = null, ?array $constraints = [], array $options = []): static;
 
     public function getFields(): array;
 }

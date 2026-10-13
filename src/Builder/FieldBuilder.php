@@ -10,7 +10,7 @@ class FieldBuilder implements BuilderInterface
 {
     private array $fields = [];
 
-    public function add(string $field, TransformerInterface|MapperDefinitionInterface|string|null $type = null, ?array $constraints = []): static
+    public function add(string $field, TransformerInterface|string|MapperDefinitionInterface $type = null, ?array $constraints = [], array $options = []): static
     {
         $key = match (true) {
             $type instanceof MapperDefinitionInterface => 'MapperDefinition',
@@ -20,6 +20,7 @@ class FieldBuilder implements BuilderInterface
         $this->fields[$field] = [
             $key => $type,
             'constraints' => $constraints,
+            'options' => $options
         ];
 
         return $this;

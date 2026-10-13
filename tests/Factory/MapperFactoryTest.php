@@ -6,7 +6,7 @@ use Netmex\HydratorBundle\Contracts\BuilderInterface;
 use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
 use Netmex\HydratorBundle\Factory\MapperFactory;
 use Netmex\HydratorBundle\Mapper\MapperDefinition;
-use Netmex\HydratorBundle\Options\OptionsResolver;
+use Netmex\HydratorBundle\Resolver\OptionsResolver;
 use Netmex\HydratorBundle\Transformer\CapitalizationTransformer;
 use PHPUnit\Framework\TestCase;
 

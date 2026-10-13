@@ -3,6 +3,7 @@
 namespace Netmex\HydratorBundle\Mapper;
 use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
 use Netmex\HydratorBundle\Contracts\TransformerInterface;
+use Netmex\HydratorBundle\Options\FieldOptions;
 
 class FieldDefinition
 {
@@ -10,7 +11,8 @@ class FieldDefinition
         public string $name,
         public TransformerInterface|MapperDefinitionInterface|null $type = null,
         public mixed $value = null,
-        public array $constraints = []
+        public array $constraints = [],
+        public FieldOptions $options
     ) {}
 
     public function getName(): string
@@ -36,6 +38,16 @@ class FieldDefinition
     public function getConstraints(): array
     {
         return $this->constraints;
+    }
+
+    public function getOption(string $name, mixed $default = null): mixed
+    {
+        return $this->options[$name] ?? $default;
+    }
+
+    public function getOptions(): FieldOptions
+    {
+        return $this->options;
     }
 
     public function isValid(): bool
