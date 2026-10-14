@@ -1,0 +1,12 @@
+services:
+  Netmex\HydratorBundle\Processor\MappingProcessor:
+    arguments:
+      - '@Netmex\HydratorBundle\Factory\MapperFactory'
+      - '@Netmex\HydratorBundle\Hydrator\ObjectHydrator'
+      - '@Netmex\HydratorBundle\Iterator\MappingIterator'
+
+  Netmex\HydratorBundle\Processor\NestedMappingProcessor:
+    lazy: true
+    arguments:
+      - '@Netmex\HydratorBundle\Factory\MapperFactory'
+      - '@Netmex\HydratorBundle\Hydrator\ObjectHydrator'

@@ -2,24 +2,16 @@
 
 namespace Netmex\HydratorBundle\Mapper;
 
-class MapperDefinition
+use Netmex\HydratorBundle\Field\FieldCollection;
+use Netmex\HydratorBundle\Options\MapperOptions;
+
+final readonly class MapperDefinition
 {
-    private string $model;
-
-    private FieldCollection $fields;
-
-    private ?object $target;
-
-    public function __construct(string $model, FieldCollection $fields, ?object $target = null) {
-        $this->model = $model;
-        $this->fields = $fields;
-        $this->target = $target;
-    }
-
-    public function getModel(): string
-    {
-        return $this->model;
-    }
+    public function __construct(
+        private FieldCollection $fields,
+        private ?object         $target = null,
+        public MapperOptions    $options
+    ) {}
 
     public function getFields(): FieldCollection
     {
@@ -29,5 +21,15 @@ class MapperDefinition
     public function getTarget(): ?object
     {
         return $this->target;
+    }
+
+    public function getOption(string $name, mixed $default = null): mixed
+    {
+        return $this->options[$name] ?? $default;
+    }
+
+    public function getOptions(): MapperOptions
+    {
+        return $this->options;
     }
 }

@@ -3,7 +3,7 @@
 namespace Netmex\HydratorBundle\Validation;
 
 use Netmex\HydratorBundle\Contracts\ValidatorInterface;
-use Netmex\HydratorBundle\Mapper\FieldDefinition;
+use Netmex\HydratorBundle\Field\FieldDefinition;
 use Symfony\Component\Validator\Validator\ValidatorInterface as SymfonyValidator;
 
 class FieldValidator implements ValidatorInterface

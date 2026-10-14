@@ -2,44 +2,52 @@
 
 namespace Netmex\HydratorBundle\Factory;
 use Netmex\HydratorBundle\Contracts\BuilderInterface;
-use Netmex\HydratorBundle\Mapper\FieldCollection;
-use Netmex\HydratorBundle\Mapper\FieldDefinition;
+use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
+use Netmex\HydratorBundle\Field\FieldCollection;
 use Netmex\HydratorBundle\Mapper\MapperDefinition;
-use Netmex\HydratorBundle\Options\OptionsResolver;
+use Netmex\HydratorBundle\Options\MapperOptions;
+use Netmex\HydratorBundle\Resolver\OptionsResolver;
 
-class MapperFactory
+final readonly class MapperFactory
 {
     private BuilderInterface $builder;
     private OptionsResolver $resolver;
 
-    public function __construct(BuilderInterface $builder, OptionsResolver $resolver)
+    public function __construct(BuilderInterface $builder, OptionsResolver $resolver, private FieldFactory $fieldFactory)
     {
         $this->builder = $builder;
         $this->resolver = $resolver;
     }
 
-    public function create(object $mapper, array $data, ?object $target = null): MapperDefinition
+    public function create(MapperDefinitionInterface $mapper, array $data, ?object $target = null, array $options = []): MapperDefinition
     {
         $mapper->process($this->builder);
         $mapper->options($this->resolver);
 
-        $resolved = $this->resolver->resolve($this->builder->getFields());
+
+        $options = $this->resolver->resolve(
+            array_replace(
+                $this->resolver->getDefaults(),
+                $options,
+            ),
+            MapperOptions::class
+        );
+
 
         $fields = [];
 
-        foreach ($resolved['fields'] as $name => $fieldInfo) {
-            $fields[] = new FieldDefinition(
-                name: $name,
-                transformer: isset($fieldInfo['Transformer']) ? new $fieldInfo['Transformer'] : null,
-                value: $data[$name] ?? null,
-                constraints: $fieldInfo['constraints'] ?? [],
+        foreach ($this->builder->getFields() as $name => $fieldInfo) {
+            $fields[] = $this->fieldFactory->create(
+                $name,
+                $fieldInfo,
+                $data,
             );
         }
 
         return new MapperDefinition(
-            model: $resolved['model'],
             fields: new FieldCollection($fields),
-            target: $target
+            target: $target,
+            options: $options,
         );
     }
 }

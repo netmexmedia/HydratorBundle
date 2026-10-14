@@ -1,0 +1,24 @@
+services:
+  Netmex\HydratorBundle\Contracts\BuilderInterface:
+    alias: Netmex\HydratorBundle\Builder\FieldBuilder
+
+  Netmex\HydratorBundle\Contracts\ValidatorInterface:
+    alias: Netmex\HydratorBundle\Validation\FieldValidator
+
+  Netmex\HydratorBundle\Contracts\MapperInterface:
+    class: Netmex\HydratorBundle\Mapper\Mapper
+    arguments:
+      - '@Netmex\HydratorBundle\Contracts\BuilderInterface'
+      - '@Netmex\HydratorBundle\Resolver\OptionsResolver'
+      - '@Netmex\HydratorBundle\Resolver\MapperResolver'
+      - '@Netmex\HydratorBundle\Contracts\ValidatorInterface'
+      - '@Netmex\HydratorBundle\Processor\MappingProcessor'
+
+  Netmex\HydratorBundle\Validation\FieldValidator:
+    arguments:
+      - '@validator'
+
+  Netmex\HydratorBundle\Registry\TransformerLocator:
+    arguments:
+      $locator: !tagged_locator
+        tag: 'netmex.transformer'

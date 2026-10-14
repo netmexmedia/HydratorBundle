@@ -2,7 +2,7 @@
 
 namespace Netmex\HydratorBundle\Contracts;
 
-use Netmex\HydratorBundle\Mapper\FieldDefinition;
+use Netmex\HydratorBundle\Field\FieldDefinition;
 
 interface ValidatorInterface
 {

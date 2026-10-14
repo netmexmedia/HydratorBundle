@@ -6,72 +6,38 @@ use Netmex\HydratorBundle\Contracts\BuilderInterface;
 use Netmex\HydratorBundle\Contracts\MapperInterface;
 use Netmex\HydratorBundle\Contracts\ValidatorInterface;
 use Netmex\HydratorBundle\Exception\MappingValidationException;
-use Netmex\HydratorBundle\Factory\MapperFactory;
-use Netmex\HydratorBundle\Options\OptionsResolver;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
-use \Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Netmex\HydratorBundle\Processor\MappingProcessor;
+use Netmex\HydratorBundle\Resolver\MapperResolver;
+use Netmex\HydratorBundle\Resolver\OptionsResolver;
 
-class Mapper implements MapperInterface
+final readonly class Mapper implements MapperInterface
 {
-    private BuilderInterface $builder;
-    private OptionsResolver $optionsResolver;
-    private MapperFactory $hydrationDefinitionFactory;
-    private MapperResolver $mapperResolver;
-    private ValidatorInterface $validator;
-    private array $violations = [];
-    private DenormalizerInterface $serializer;
-
     public function __construct(
-        BuilderInterface $builder,
-        OptionsResolver $optionsResolver,
-        MapperFactory $hydrationDefinitionFactory,
-        MapperResolver $mapperResolver,
-        ValidatorInterface $validator,
-        DenormalizerInterface $serializer
-    )
-    {
-        $this->builder = $builder;
-        $this->optionsResolver = $optionsResolver;
-        $this->hydrationDefinitionFactory = $hydrationDefinitionFactory;
-        $this->mapperResolver = $mapperResolver;
-        $this->validator = $validator;
-        $this->serializer = $serializer;
-    }
+        private BuilderInterface $builder,
+        private OptionsResolver $optionsResolver,
+        private MapperResolver $mapperResolver,
+        private ValidatorInterface $validator,
+        private MappingProcessor $mappingProcessor,
+    ) {}
 
-    public function build(string $mapperClass, array $inputData, ?object $target = null): object
+    /**
+     * @throws MappingValidationException
+     */
+    public function build(string $mapperClass, array $inputData, ?object $target = null, array $options = []): object|array
     {
         $this->validator->resetErrors();
-        $transformedData = [];
 
-        $transformer = $this->mapperResolver->resolve($mapperClass, $this->builder, $this->optionsResolver);
-        $definition = $this->hydrationDefinitionFactory->create($transformer, $inputData, $target);
-        $fields = $definition->getFields();
+        $mapper = $this->mapperResolver->resolve(
+            $mapperClass,
+            $this->builder,
+            $this->optionsResolver,
+        );
 
-        foreach ($fields as $field) {
-            $this->validator->validate($field, 'input');
-
-            if ($field->getValue() === null) {
-                continue;
-            }
-
-            $field->transform();
-
-            $this->validator->validate($field, 'output');
-
-            $transformedData[$field->getName()] = $field->getValue();
-        }
-
-        if ($this->validator->hasErrors()) {
-            throw new MappingValidationException($this->validator->getErrors());
-        }
-
-        return $this->serializer->denormalize(
-            $transformedData,
-            $definition->getModel(),
-            null,
-            [
-                AbstractNormalizer::OBJECT_TO_POPULATE => $definition->getTarget()
-            ]
+        return $this->mappingProcessor->map(
+            $mapper,
+            $inputData,
+            $target,
+            $options,
         );
     }
 }

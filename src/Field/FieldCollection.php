@@ -1,8 +1,8 @@
 <?php
 
-namespace Netmex\HydratorBundle\Mapper;
+namespace Netmex\HydratorBundle\Field;
 
-class FieldCollection implements \IteratorAggregate, \Countable
+final class FieldCollection implements \IteratorAggregate, \Countable
 {
     /** @var FieldDefinition[] */
     private array $fields = [];
@@ -37,15 +37,5 @@ class FieldCollection implements \IteratorAggregate, \Countable
     public function count(): int
     {
         return count($this->fields);
-    }
-
-    public function requiredOnly(): array
-    {
-        return array_filter($this->fields, fn(FieldDefinition $f) => $f->options['required'] ?? false);
-    }
-
-    public function getFields(): array
-    {
-        return $this->fields;
     }
 }
