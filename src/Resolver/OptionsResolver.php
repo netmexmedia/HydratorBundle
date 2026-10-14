@@ -5,7 +5,7 @@ namespace Netmex\HydratorBundle\Resolver;
 use Netmex\HydratorBundle\Contracts\OptionsInterface;
 use Netmex\HydratorBundle\Contracts\OptionsResolverInterface;
 
-class OptionsResolver implements OptionsResolverInterface
+final class OptionsResolver implements OptionsResolverInterface
 {
     private array $defaults = [];
 

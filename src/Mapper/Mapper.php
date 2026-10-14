@@ -3,204 +3,41 @@
 namespace Netmex\HydratorBundle\Mapper;
 
 use Netmex\HydratorBundle\Contracts\BuilderInterface;
-use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
 use Netmex\HydratorBundle\Contracts\MapperInterface;
-use Netmex\HydratorBundle\Contracts\TransformerInterface;
 use Netmex\HydratorBundle\Contracts\ValidatorInterface;
 use Netmex\HydratorBundle\Exception\MappingValidationException;
-use Netmex\HydratorBundle\Factory\MapperFactory;
+use Netmex\HydratorBundle\Processor\MappingProcessor;
+use Netmex\HydratorBundle\Resolver\MapperResolver;
 use Netmex\HydratorBundle\Resolver\OptionsResolver;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
-class Mapper implements MapperInterface
+final readonly class Mapper implements MapperInterface
 {
-    private BuilderInterface $builder;
-    private OptionsResolver $optionsResolver;
-    private MapperFactory $hydrationDefinitionFactory;
-    private MapperResolver $mapperResolver;
-    private ValidatorInterface $validator;
-    private array $violations = [];
-    private DenormalizerInterface $serializer;
-
     public function __construct(
-        BuilderInterface $builder,
-        OptionsResolver $optionsResolver,
-        MapperFactory $hydrationDefinitionFactory,
-        MapperResolver $mapperResolver,
-        ValidatorInterface $validator,
-        DenormalizerInterface $serializer,
-    ) {
-        $this->builder = $builder;
-        $this->optionsResolver = $optionsResolver;
-        $this->hydrationDefinitionFactory = $hydrationDefinitionFactory;
-        $this->mapperResolver = $mapperResolver;
-        $this->validator = $validator;
-        $this->serializer = $serializer;
-    }
+        private BuilderInterface $builder,
+        private OptionsResolver $optionsResolver,
+        private MapperResolver $mapperResolver,
+        private ValidatorInterface $validator,
+        private MappingProcessor $mappingProcessor,
+    ) {}
 
+    /**
+     * @throws MappingValidationException
+     */
     public function build(string $mapperClass, array $inputData, ?object $target = null, array $options = []): object|array
     {
         $this->validator->resetErrors();
 
-        $mapperDefinition = $this->mapperResolver->resolve(
+        $mapper = $this->mapperResolver->resolve(
             $mapperClass,
             $this->builder,
             $this->optionsResolver,
         );
 
-        $definition = $this->hydrationDefinitionFactory->create(
-            $mapperDefinition,
+        return $this->mappingProcessor->map(
+            $mapper,
             $inputData,
             $target,
-            $options
-        );
-
-        if ($definition->getOptions()->isMultiple()) {
-
-            if (!array_is_list($inputData)) {
-                throw new \InvalidArgumentException(
-                    'A multiple mapper expects a list of items.',
-                );
-            }
-
-            $objects = [];
-
-            foreach ($inputData as $data) {
-                if (!is_array($data)) {
-                    throw new \InvalidArgumentException(
-                        'Each item in a multiple mapper must be an array.',
-                    );
-                }
-
-                $itemDefinition = $this->hydrationDefinitionFactory->create(
-                    $mapperDefinition,
-                    $data,
-                );
-
-                $transformedData = $this->processFields($itemDefinition);
-
-                if ($this->validator->hasErrors()) {
-                    throw new MappingValidationException(
-                        $this->validator->getErrors(),
-                    );
-                }
-
-                $objects[] = $this->serializer->denormalize(
-                    $transformedData,
-                    $itemDefinition->getOptions()->getModel(),
-                );
-            }
-
-
-            return $objects;
-        }
-
-        $transformedData = $this->processFields($definition);
-
-        if ($this->validator->hasErrors()) {
-            throw new MappingValidationException(
-                $this->validator->getErrors(),
-            );
-        }
-
-        return $this->serializer->denormalize(
-            $transformedData,
-            $definition->getOptions()->getModel(),
-            null,
-            [
-                AbstractNormalizer::OBJECT_TO_POPULATE => $definition->getTarget(),
-            ],
-        );
-    }
-
-    private function processFields(MapperDefinition $definition): array
-    {
-        $transformedData = [];
-
-        /** @var FieldDefinition $field */
-        foreach ($definition->getFields() as $field) {
-            $this->validator->validate($field, 'input');
-
-            if ($field->getValue() === null) {
-                continue;
-            }
-
-            $type = $field->getType();
-
-
-            if ($type instanceof TransformerInterface) {
-                $field->transform();
-            } elseif ($type instanceof MapperDefinitionInterface) {
-                $value = $field->getValue();
-
-
-                if ($field->getOptions()->isMultiple()) {
-
-                    if (!is_array($value) || !array_is_list($value)) {
-                        throw new \InvalidArgumentException(sprintf(
-                            'Field "%s" expects a list of items.',
-                            $field->getName(),
-                        ));
-                    }
-
-                    $objects = [];
-
-                    foreach ($value as $itemData) {
-
-                        if (!is_array($itemData)) {
-                            throw new \InvalidArgumentException(sprintf(
-                                'Each item in field "%s" must be an array.',
-                                $field->getName(),
-                            ));
-                        }
-
-                        $objects[] = $this->hydrateNestedObject(
-                            $type,
-                            $itemData,
-                        );
-                    }
-
-                    $field->setValue($objects);
-                } else {
-                    if (!is_array($value)) {
-                        throw new \InvalidArgumentException(sprintf(
-                            'Field "%s" expects an array of object data.',
-                            $field->getName(),
-                        ));
-                    }
-
-                    $field->setValue(
-                        $this->hydrateNestedObject($type, $value),
-                    );
-                }
-
-            }
-
-            $this->validator->validate($field, 'output');
-
-            $transformedData[$field->getName()] = $field->getValue();
-        }
-
-        return $transformedData;
-    }
-
-    private function hydrateNestedObject(MapperDefinitionInterface $type, array $inputData): object
-    {
-        $nestedDefinition = $this->hydrationDefinitionFactory->create(
-            $type,
-            $inputData,
-        );
-
-        $nestedData = $this->processFields($nestedDefinition);
-
-        return $this->serializer->denormalize(
-            $nestedData,
-            $nestedDefinition->getOptions()->getModel(),
-            null,
-            [
-                AbstractNormalizer::OBJECT_TO_POPULATE => $nestedDefinition->getTarget(),
-            ],
+            $options,
         );
     }
 }

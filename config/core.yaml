@@ -1,0 +1,16 @@
+services:
+  Netmex\HydratorBundle\Builder\FieldBuilder: ~
+
+  Netmex\HydratorBundle\Resolver\OptionsResolver: ~
+
+  Netmex\HydratorBundle\Resolver\MapperResolver: ~
+
+  Netmex\HydratorBundle\Factory\FieldFactory:
+    arguments:
+      - '@Netmex\HydratorBundle\Resolver\OptionsResolver'
+
+  Netmex\HydratorBundle\Factory\MapperFactory:
+    arguments:
+      - '@Netmex\HydratorBundle\Contracts\BuilderInterface'
+      - '@Netmex\HydratorBundle\Resolver\OptionsResolver'
+      - '@Netmex\HydratorBundle\Factory\FieldFactory'

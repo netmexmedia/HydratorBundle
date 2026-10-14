@@ -1,0 +1,22 @@
+services:
+  Netmex\HydratorBundle\Hydrator\FieldHydrator:
+    arguments:
+      $strategies: !tagged_iterator netmex.hydrator.field_strategy
+      $validator: '@Netmex\HydratorBundle\Contracts\ValidatorInterface'
+
+  Netmex\HydratorBundle\Iterator\FieldIterator:
+    arguments:
+      - '@Netmex\HydratorBundle\Hydrator\FieldHydrator'
+      - '@Netmex\HydratorBundle\Processor\NestedMappingProcessor'
+
+  Netmex\HydratorBundle\Iterator\MappingIterator:
+    arguments:
+      - '@Netmex\HydratorBundle\Factory\MapperFactory'
+      - '@Netmex\HydratorBundle\Hydrator\ObjectHydrator'
+
+  Netmex\HydratorBundle\Hydrator\ObjectHydrator:
+    lazy: true
+    arguments:
+      - '@Netmex\HydratorBundle\Iterator\FieldIterator'
+      - '@Netmex\HydratorBundle\Contracts\ValidatorInterface'
+      - '@serializer'

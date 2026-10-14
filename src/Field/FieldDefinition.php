@@ -1,11 +1,12 @@
 <?php
 
-namespace Netmex\HydratorBundle\Mapper;
+namespace Netmex\HydratorBundle\Field;
+
 use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
 use Netmex\HydratorBundle\Contracts\TransformerInterface;
 use Netmex\HydratorBundle\Options\FieldOptions;
 
-class FieldDefinition
+final class FieldDefinition
 {
     public function __construct(
         public string $name,
@@ -62,10 +63,5 @@ class FieldDefinition
         }
 
         $this->value = $this->type->transform($this->value);
-    }
-
-    public function isRequired(): bool
-    {
-        return $this->constraints['required'] ?? false;
     }
 }

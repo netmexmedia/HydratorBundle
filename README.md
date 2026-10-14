@@ -1,13 +1,19 @@
 # Netmex HydratorBundle
 
-## About
-The Netmex HydratorBundle is a Symfony bundle designed to simplify the process of hydrating data transfer objects (DTOs) from arrays or JSON inputs with built-in support for data transformation and validation using Symfony constraints.
+Netmex HydratorBundle is a Symfony bundle for mapping, transforming, and validating input data into PHP objects and data transfer objects (DTOs).
 
-It enables you to:
-* Define mappers that transform and validate input data.
-* Easily create reusable transformers to convert raw data (e.g., capitalization, formatting).
-* Handle validation errors gracefully.
-* Integrate seamlessly into Symfony controllers for clean and maintainable code.
+Define reusable mapper definitions to control how input fields are processed, how values are transformed, and how validation constraints are applied. The bundle also supports nested mappings, recursive hydration, and mapping collections of input data.
+
+## Features
+
+- Reusable mapper definitions
+- Custom field transformers
+- Symfony Validator constraints
+- Nested and recursive hydration
+- Collection hydration
+- Hydration of existing objects
+- Configurable mapping options
+- Integration with Symfony's service container
 
 ## Installation
 
@@ -15,128 +21,64 @@ It enables you to:
 composer require netmex/hydrator-bundle
 ```
 
-## Usage
+See the [installation guide](docs/installation.md) for configuration details.
 
-Create a mapper class that implements
-```Netmex\HydratorBundle\Contracts\MapperDefinitionInterface```.
+## Quick start
 
-##### Example Hydrator
+Create a mapper definition by implementing `MapperDefinitionInterface`:
 
 ```php
 <?php
 
 namespace App\Hydrator;
 
-use App\Entity\MyClass;use App\Transformer\CapitalizationTransformer;use Netmex\HydratorBundle\Contracts\BuilderInterface;use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;use Netmex\HydratorBundle\Resolver\OptionsResolver;use Symfony\Component\Validator\Constraints\Length;use Symfony\Component\Validator\Constraints\NotBlank;
+use App\Entity\User;
+use Netmex\HydratorBundle\Contracts\BuilderInterface;
+use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
+use Netmex\HydratorBundle\Resolver\OptionsResolver;
 
-class Hydrator implements MapperDefinitionInterface
+final class UserHydrator implements MapperDefinitionInterface
 {
     public function process(BuilderInterface $builder): void
     {
         $builder
-            ->add('key', CapitalizationTransformer::class, [
-                NotBlank::class => null,
-                Length::class => ['min' => 6, 'max' => 7],
-            ]);
+            ->add('name')
+            ->add('email');
     }
 
     public function options(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'model' => MyClass::class,
+            'model' => User::class,
         ]);
     }
 }
 ```
 
-### Nested Hydration
-
-You can also use a mapper definition to hydrate nested objects. Simply pass another mapper definition to `add()`.
+Inject `MapperInterface` into your service or controller and use `build()`:
 
 ```php
-$builder
-    ->add('name')
-    ->add('address', new AddressHydrator());
+$user = $mapper->build(UserHydrator::class, $inputData);
 ```
 
-The `AddressHydrator` defines how the `address` field is mapped into an object. Nested mappings support the same transformations and validation as regular mappings.
+The input data should be an associative array containing the fields expected by the mapper.
 
+## Documentation
 
-### Create a Transformer
+- [Installation and configuration](docs/installation.md)
+- [Basic usage](docs/basic-usage.md)
+- [Mapper options](docs/mapper-options.md)
+- [Transformers](docs/transformers.md)
+- [Validation](docs/validation.md)
+- [Nested and recursive mapping](docs/nested-and-recursive-mapping.md)
+- [Collection hydration](docs/collections.md)
+- [Existing objects](docs/existing-objects.md)
+- [Error handling](docs/error-handling.md)
 
-```php
-<?php
+## Requirements
 
-namespace App\Transformer;
+Check `composer.json` for the supported PHP and Symfony versions.
 
-use Netmex\HydratorBundle\Contracts\TransformerInterface;
+## License
 
-class CapitalizationTransformer implements TransformerInterface
-{
-    public function transform(string $data): string
-    {
-        return strtoupper($data);
-    }
-}
-```
-
-### Injecting the Mapper into a Controller
-
-```php
-<?php
-
-namespace App\Controller;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
-use App\Hydrator\Hydrator;
-use Netmex\HydratorBundle\Contracts\MapperInterface;
-use Netmex\HydratorBundle\Exception\ValidationFailedException;
-
-class ExampleController
-{
-    #[Route('/example', name: 'app_example')]
-    public function index(Request $request, MapperInterface $hydrator): Response
-    {
-        $jsonContent = $request->getContent();
-        $data = json_decode($jsonContent, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return new JsonResponse(['error' => 'Invalid JSON'], 400);
-        }
-
-        try {
-            $result = $hydrator->build(Hydrator::class, $data);
-        } catch (ValidationFailedException $e) {
-            return new JsonResponse(['errors' => (string) $e->getViolations()], 400);
-        }
-
-        return new JsonResponse($result);
-    }
-}
-```
-
-## Recommended Directory Layout
-```text
-src/
-├── Hydrator/
-│   └── Hydrator.php
-├── Transformer/
-│   └── CapitalizationTransformer.php
-└── Controller/
-    └── ExampleController.php
-```
-
-## Exception Handling
-```php
-try {
-    $data = $hydrator->build(Hydrator::class, $requestData);
-} catch (ValidationFailedException $e) {
-    return new JsonResponse(['errors' => (string) $e->getViolations()], 400);
-}
-```
-
-## More about Constraints
-See [Symfony Validation Constraints](https://symfony.com/doc/current/validation.html#constraints) for available options.
+See the repository's `LICENSE` file.

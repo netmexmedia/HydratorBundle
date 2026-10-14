@@ -2,7 +2,7 @@
 
 namespace Netmex\HydratorBundle\Factory;
 
-use Netmex\HydratorBundle\Mapper\FieldDefinition;
+use Netmex\HydratorBundle\Field\FieldDefinition;
 use Netmex\HydratorBundle\Options\FieldOptions;
 use Netmex\HydratorBundle\Resolver\OptionsResolver;
 

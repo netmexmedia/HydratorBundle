@@ -3,7 +3,7 @@
 namespace Netmex\HydratorBundle\Factory;
 use Netmex\HydratorBundle\Contracts\BuilderInterface;
 use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
-use Netmex\HydratorBundle\Mapper\FieldCollection;
+use Netmex\HydratorBundle\Field\FieldCollection;
 use Netmex\HydratorBundle\Mapper\MapperDefinition;
 use Netmex\HydratorBundle\Options\MapperOptions;
 use Netmex\HydratorBundle\Resolver\OptionsResolver;

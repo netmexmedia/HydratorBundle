@@ -1,0 +1,8 @@
+services:
+  Netmex\HydratorBundle\Strategy\TransformerStrategy:
+    tags:
+      - 'netmex.hydrator.field_strategy'
+
+  Netmex\HydratorBundle\Strategy\MapperStrategy:
+    tags:
+      - 'netmex.hydrator.field_strategy'

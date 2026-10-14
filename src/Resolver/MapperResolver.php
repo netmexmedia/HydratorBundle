@@ -1,12 +1,12 @@
 <?php
 
-namespace Netmex\HydratorBundle\Mapper;
+namespace Netmex\HydratorBundle\Resolver;
 
 use Netmex\HydratorBundle\Contracts\BuilderInterface;
 use Netmex\HydratorBundle\Contracts\MapperDefinitionInterface;
 use Netmex\HydratorBundle\Contracts\OptionsResolverInterface;
 
-class MapperResolver
+final readonly class MapperResolver
 {
     public function resolve(string $mapper, BuilderInterface $builder, OptionsResolverInterface $optionsResolver): MapperDefinitionInterface
     {
